@@ -86,7 +86,10 @@ logger.info('----------')
 
 # Data file
 logger.info('Loading data sets')
-parser = ConllParser(separator='\t', token_col=0, label_col=1, skip_comment=True)
+parser = ConllParser(separator='\t',
+                     token_col=1,
+                     label_col=2,
+                     skip_comment=True)
 train_set = SeqLabelDataset(args.train, parser=parser)
 dev_set = SeqLabelDataset(args.dev, parser=parser)
 test_set = SeqLabelDataset(args.test, parser=parser)
@@ -100,14 +103,27 @@ for _, ds in datasets.items():
     token_count.update(tc)
     char_count.update(cc)
     label_count.update(lc)
-token_vocab = count2vocab(token_count, offset=len(C.TOKEN_PADS), pads=C.TOKEN_PADS)
+token_vocab = count2vocab(token_count, offset=len(
+    C.TOKEN_PADS), pads=C.TOKEN_PADS)
 char_vocab = count2vocab(char_count, offset=len(C.CHAR_PADS), pads=C.CHAR_PADS)
 label_vocab = count2vocab(label_count, offset=1, pads=[(C.PAD, C.PAD_INDEX)])
-idx_token = {v: k for k, v in token_vocab.items()}
+# print("label_vocab: ", label_vocab)  # DEBUG
+# idx_token = {v: k for k, v in token_vocab.items()}  # not debug
+idx_token = {v: k for k, v in token_vocab.items() if k != ''}  # DEBUG
+# print(idx_token)  # DEBUG
+# print(idx_token.get(243, "not found"))  # DEBUG
+# print([str(k) + " " + str(v) for k, v in idx_token.items()  # DEBUG
+#        if (k == 1 or v == 1 or k == '1' or v == '1')])  # DEBUG  HOW CAN THE TOKEN BE 1 DURING TEST SET?
 idx_label = {v: k for k, v in label_vocab.items()}
 train_set.numberize(token_vocab, label_vocab, char_vocab)
 dev_set.numberize(token_vocab, label_vocab, char_vocab)
 test_set.numberize(token_vocab, label_vocab, char_vocab)
+# print("numberized train set:")
+# print(train_set.data)  # DEBUG
+# print("numberized dev set:")
+# print(dev_set.data)    # DEBUG
+# print("numberized test set:")
+# print(test_set.data)   # DEBUG
 print('#token: {}'.format(len(token_vocab)))
 print('#char: {}'.format(len(char_vocab)))
 print('#label: {}'.format(len(label_vocab)))
@@ -189,13 +205,25 @@ try:
             epoch_loss = []
             results = []
 
-            for batch in DataLoader(
+            dl = DataLoader(
                 dataset,
                 batch_size=args.batch_size,
                 shuffle=ds == 'train',
                 drop_last=ds == 'train',
-                collate_fn=processor.process
-            ):
+                collate_fn=processor.process,
+            )
+            # dl = DataLoader(  # DEBUG
+            #     train_set,
+            #     batch_size=1,
+            #     shuffle=True,
+            #     drop_last=True,
+            #     collate_fn=processor.process,
+            # )
+
+            # print("AAAAAAAAAAAAA ", len(dataset.data))  # DEBUG
+            # print(dataset.data)  # DEBUG
+            for batch in dl:
+                # print("BATCH: ", batch)  # DEBUG
                 optimizer.zero_grad()
                 tokens, labels, chars, seq_lens, char_lens = batch
                 if ds == 'train':
@@ -216,10 +244,14 @@ try:
             epoch_loss = sum(epoch_loss) / len(epoch_loss)
             logger.info('{} Loss: {:.4f}'.format(ds, epoch_loss))
 
+            logger.info("current ds: {}".format(ds))  # DEBUG
             if ds == 'dev' or ds == 'test':
+                # print("call to evaluate: ", results, idx_token, idx_label)  #
+                # DEBUG
                 fscore, prec, rec = evaluate(
                     results, idx_token, idx_label, writer=log_writer
                 )
+                logger.info("fscore: {}".format(fscore))  # DEBUG
                 if ds == 'dev' and fscore > best_dev_score:
                     logger.info('New best score: {:.4f}'.format(fscore))
                     best_dev_score = fscore
@@ -227,6 +259,8 @@ try:
                     logger.info(
                         'Saving the current model to {}'.format(model_file))
                     torch.save(state, model_file)
+                    logger.info("State: {}".format(state))  # DEBUG
+                    logger.info("file exists: {}".format(model_file))  # DEBUG
                 if best and ds == 'test':
                     best_test_score = fscore
 
