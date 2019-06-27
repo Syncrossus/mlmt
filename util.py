@@ -41,7 +41,7 @@ def evaluate(results, idx_token, idx_label, writer=None):
             golds_s = golds_s.data.tolist()[:l]
             tokens_s = tokens_s.data.tolist()[:l]
             for p, g, t in zip(preds_s, golds_s, tokens_s):
-                token = idx_token.get(t, C.UNK_INDEX)
+                token = idx_token.get(t, C.UNK)
                 # if token == '':  # debug
                 #     token = '<$UNK$>'
                 # print(idx_token)  # debug

@@ -113,7 +113,7 @@ idx_token = {v: k for k, v in token_vocab.items() if k != ''}  # DEBUG
 # print(idx_token)  # DEBUG
 # print(idx_token.get(243, "not found"))  # DEBUG
 # print([str(k) + " " + str(v) for k, v in idx_token.items()  # DEBUG
-#        if (k == 1 or v == 1 or k == '1' or v == '1')])  # DEBUG  HOW CAN THE TOKEN BE 1 DURING TEST SET?
+#        if (k == 1 or v == 1 or k == '1' or v == '1')])  # DEBUG
 idx_label = {v: k for k, v in label_vocab.items()}
 train_set.numberize(token_vocab, label_vocab, char_vocab)
 dev_set.numberize(token_vocab, label_vocab, char_vocab)
