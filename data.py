@@ -4,7 +4,7 @@ import constant as C
 import logging
 from collections import Counter, defaultdict
 from random import shuffle, uniform, sample
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 logger = logging.getLogger()
 
@@ -33,7 +33,6 @@ def count2vocab(count, offset=0, pads=None, min_count=0, ignore_case=False):
             vocab[k] = v
 
     return vocab
-
 
 
 class Parser(object):
@@ -144,7 +143,7 @@ class SeqLabelDataset(Dataset):
 
     def load(self):
         self.raw_data = [(tokens, labels)
-                     for tokens, labels in self.parser.parse(self.path)]
+                         for tokens, labels in self.parser.parse(self.path)]  # use zip?
 
     def stats(self,
               token_ignore_case: bool = False,
@@ -215,12 +214,14 @@ class SeqLabelProcessor(BatchProcessor):
         batch_labels = []
         batch_chars = []
         for tokens, labels, chars in batch:
-            batch_tokens.append(tokens + [padding_idx] * (max_seq_len - len(tokens)))
-            batch_labels.append(labels + [padding_idx] * (max_seq_len - len(tokens)))
+            batch_tokens.append(
+                tokens + [padding_idx] * (max_seq_len - len(tokens)))
+            batch_labels.append(
+                labels + [padding_idx] * (max_seq_len - len(tokens)))
             batch_chars.extend(
-                [x + [0] * (max_char_len - len(x)) for x in chars]
-                # + [[0] * max_char_len] * (max_seq_len - len(tokens))
-                + [[0] * max_char_len for _ in range(max_seq_len - len(tokens))]
+                [x + [0] * (max_char_len - len(x)) for x in chars] +
+                # [[0] * max_char_len] * (max_seq_len - len(tokens)) +
+                [[0] * max_char_len for _ in range(max_seq_len - len(tokens))]
             )
 
         batch_tokens = torch.LongTensor(batch_tokens)
