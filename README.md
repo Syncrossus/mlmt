@@ -61,6 +61,7 @@ Evalute the trained model:
 ```
 python eval_multi.py --model <PATH/TO/THE/MODEL/FILE> --file <PATH/TO/THE/DATA/FILE>
   --log <LOG/DIRECTORY>
+```
 
 ## Configuration
 
