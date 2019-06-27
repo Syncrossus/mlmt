@@ -30,6 +30,10 @@ def evaluate(results, idx_token, idx_label, writer=None):
     """
     # b: batch, s: sequence
     outputs = []
+    # preds: predictions
+    # golds: answers?
+    # len: length of something
+    # tokens: original words?
     for preds_b, golds_b, len_b, tokens_b in results:
         for preds_s, golds_s, len_s, tokens_s in zip(preds_b, golds_b, len_b, tokens_b):
             l = int(len_s.item())
@@ -38,10 +42,17 @@ def evaluate(results, idx_token, idx_label, writer=None):
             tokens_s = tokens_s.data.tolist()[:l]
             for p, g, t in zip(preds_s, golds_s, tokens_s):
                 token = idx_token.get(t, C.UNK_INDEX)
+                # if token == '':  # debug
+                #     token = '<$UNK$>'
+                # print(idx_token)  # debug
+                # print("p: ", p, ", g: ", g, ", t: ", t, ", corresponding token:", token, "|")  # DEBUG
                 outputs.append('{} {} {}'.format(
                     token, idx_label.get(g, 0), idx_label.get(p, 0)))
             outputs.append('')
+    # print("OUTPUTS: ", outputs)  # DEBUG # seems like outputs is right but counts is wrong
+    # Why is english-covered-test not like the other, uncovered datasets? is this causing an issue?
     counts = conlleval.evaluate(outputs)
+    # print("counts: ", counts)  # DEBUG
     overall, by_type = conlleval.metrics(counts)
     conlleval.report(counts)
     if writer:
@@ -54,7 +65,7 @@ class Config(dict):
 
     def __init__(self, *args, **kwargs):
         super(Config, self).__init__(*args, **kwargs)
-        __getattr__ = dict.__getitem__
+        self.__getattr__ = dict.__getitem__
 
         for arg in args:
             if isinstance(arg, dict):
@@ -62,7 +73,8 @@ class Config(dict):
                     if isinstance(v, dict):
                         v = Config(v)
                     if isinstance(v, list):
-                        v = [Config(x) if isinstance(x, dict) else x for x in v]
+                        v = [Config(x) if isinstance(
+                            x, dict) else x for x in v]
                     self[k] = v
         if kwargs:
             for k, v in kwargs.items():
