@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import torch
 import torch.nn as nn
-import torch.nn.init as I
+import torch.nn.init
 import torch.nn.utils.rnn as R
 import torch.nn.functional as F
 
@@ -105,15 +105,17 @@ def load_embedding(path: str,
 
 
 class Linear(nn.Linear):
+
     def __init__(self,
                  in_features: int,
                  out_features: int,
                  bias: bool = True):
         super(Linear, self).__init__(in_features, out_features, bias=bias)
-        I.orthogonal_(self.weight)
+        torch.nn.init.orthogonal_(self.weight)
 
 
 class Linears(nn.Module):
+
     def __init__(self,
                  in_features: int,
                  out_features: int,
@@ -142,6 +144,7 @@ class Linears(nn.Module):
 
 
 class Highway(nn.Module):
+
     def __init__(self,
                  size: int,
                  layer_num: int = 1,
@@ -164,6 +167,7 @@ class Highway(nn.Module):
 
 
 class LSTM(nn.LSTM):
+
     def __init__(self,
                  input_size: int,
                  hidden_size: int,
@@ -187,7 +191,7 @@ class LSTM(nn.LSTM):
     def initialize(self):
         for n, p in self.named_parameters():
             if 'weight' in n:
-                I.orthogonal_(p)
+                torch.nn.init.orthogonal_(p)
             elif 'bias' in n:
                 bias_size = p.size(0)
                 p[bias_size // 4:bias_size // 2].fill_(self.forget_bias)
@@ -217,6 +221,7 @@ class CharCNN(nn.Module):
 
 
 class CRF(nn.Module):
+
     def __init__(self, label_size):
         super(CRF, self).__init__()
 
@@ -234,7 +239,7 @@ class CRF(nn.Module):
     def pad_logits(self, logits):
         # lens = lens.data
         batch_size, seq_len, label_num = logits.size()
-        # pads = Variable(logits.data.new(batch_size, seq_len, 2).fill_(-1000.0),
+        # pads = Variable(logits.data.new(batch_size,seq_len,2).fill_(-1000.0),
         #                 requires_grad=False)
         pads = logits.new_full((batch_size, seq_len, 2), -1000.0,
                                requires_grad=False)
@@ -361,7 +366,9 @@ class CRF(nn.Module):
 
         return scores, paths
 
+
 class Model(nn.Module):
+
     def __init__(self):
         super(Model, self).__init__()
         self.gpu = False
@@ -380,6 +387,7 @@ class Model(nn.Module):
 
 
 class LstmCrf(Model):
+
     def __init__(self,
                  token_vocab,
                  label_vocab,
