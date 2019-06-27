@@ -25,6 +25,7 @@ Metrics = namedtuple('Metrics', 'tp fp fn prec rec fscore')
 
 
 class EvalCounts(object):
+
     def __init__(self):
         self.correct_chunk = 0  # number of correctly identified chunks
         self.correct_tags = 0  # number of correct chunk tags
@@ -36,6 +37,17 @@ class EvalCounts(object):
         self.t_correct_chunk = defaultdict(int)
         self.t_found_correct = defaultdict(int)
         self.t_found_guessed = defaultdict(int)
+
+    def __str__(self):
+        # return "correct_chunk = " + str(self.correct_chunk) + "; correct_tags
+        # = " + str(self.correct_tags) + "; found_correct = " +
+        # str(self.found_correct) + "; found_guessed = " +
+        # str(self.found_guessed) + "; token_counter = " +
+        # str(self.token_counter) + "; t_correct_chunk = " +
+        # str(self.t_correct_chunk) + "; t_found_correct = " +
+        # str(self.t_found_correct) + "; t_found_guessed = " +
+        # str(self.t_found_guessed)
+        return str({k: str(v) for k, v in self.__dict__.items()})
 
 
 def parse_args(argv):
@@ -64,6 +76,9 @@ def evaluate(iterable, options=None):
     if options is None:
         options = parse_args([])  # use defaults
 
+        # 2019/06/20 dirty fix for option delimiters not being right
+        # options.delimiter = ';'  # DEBUG
+
     counts = EvalCounts()
     num_features = None  # number of features per line
     in_correct = False  # currently processed chunks is correct until now
@@ -73,12 +88,14 @@ def evaluate(iterable, options=None):
     last_guessed_type = ''  # type of previous chunk tag in corpus
 
     for line in iterable:
+        # print(line)  # DEBUG
         line = line.rstrip('\r\n')
 
         if options.delimiter == ANY_SPACE:
             features = line.split()
         else:
             features = line.split(options.delimiter)
+        # print("features: ", features)  # DEBUG # WTF is features? stuff like ['ANDs', 'V;3;SG;PRS', 'V;3;SG;PRS']
 
         if num_features is None:
             num_features = len(features)
@@ -89,7 +106,8 @@ def evaluate(iterable, options=None):
         if len(features) == 0 or features[0] == options.boundary:
             features = [options.boundary, 'O', 'O']
         if len(features) < 3:
-            raise FormatError('unexpected number of features in line %s' % line)
+            raise FormatError(
+                'unexpected number of features in line %s' % line)
 
         guessed, guessed_type = parse_tag(features.pop())
         correct, correct_type = parse_tag(features.pop())
@@ -109,7 +127,7 @@ def evaluate(iterable, options=None):
 
         if in_correct:
             if (end_correct and end_guessed and
-                        last_guessed_type == last_correct_type):
+                    last_guessed_type == last_correct_type):
                 in_correct = False
                 counts.correct_chunk += 1
                 counts.t_correct_chunk[last_correct_type] += 1
@@ -149,6 +167,8 @@ def uniq(iterable):
 
 def calculate_metrics(correct, guessed, total):
     tp, fp, fn = correct, guessed - correct, total - correct
+    # print("correct, guessed, total: ", correct, ", ", guessed, ", ", total)
+    # # DEBUG
     p = 0 if tp + fp == 0 else 1. * tp / (tp + fp)
     r = 0 if tp + fn == 0 else 1. * tp / (tp + fn)
     f = 0 if p + r == 0 else 2 * p * r / (p + r)
@@ -200,22 +220,32 @@ def end_of_chunk(prev_tag, tag, prev_type, type_):
     # arguments: previous and current chunk tags, previous and current types
     chunk_end = False
 
-    if prev_tag == 'E': chunk_end = True
-    if prev_tag == 'S': chunk_end = True
+    if prev_tag == 'E':
+        chunk_end = True
+    if prev_tag == 'S':
+        chunk_end = True
 
-    if prev_tag == 'B' and tag == 'B': chunk_end = True
-    if prev_tag == 'B' and tag == 'S': chunk_end = True
-    if prev_tag == 'B' and tag == 'O': chunk_end = True
-    if prev_tag == 'I' and tag == 'B': chunk_end = True
-    if prev_tag == 'I' and tag == 'S': chunk_end = True
-    if prev_tag == 'I' and tag == 'O': chunk_end = True
+    if prev_tag == 'B' and tag == 'B':
+        chunk_end = True
+    if prev_tag == 'B' and tag == 'S':
+        chunk_end = True
+    if prev_tag == 'B' and tag == 'O':
+        chunk_end = True
+    if prev_tag == 'I' and tag == 'B':
+        chunk_end = True
+    if prev_tag == 'I' and tag == 'S':
+        chunk_end = True
+    if prev_tag == 'I' and tag == 'O':
+        chunk_end = True
 
     if prev_tag != 'O' and prev_tag != '.' and prev_type != type_:
         chunk_end = True
 
     # these chunks are assumed to have length 1
-    if prev_tag == ']': chunk_end = True
-    if prev_tag == '[': chunk_end = True
+    if prev_tag == ']':
+        chunk_end = True
+    if prev_tag == '[':
+        chunk_end = True
 
     return chunk_end
 
@@ -225,21 +255,31 @@ def start_of_chunk(prev_tag, tag, prev_type, type_):
     # arguments: previous and current chunk tags, previous and current types
     chunk_start = False
 
-    if tag == 'B': chunk_start = True
-    if tag == 'S': chunk_start = True
+    if tag == 'B':
+        chunk_start = True
+    if tag == 'S':
+        chunk_start = True
 
-    if prev_tag == 'E' and tag == 'E': chunk_start = True
-    if prev_tag == 'E' and tag == 'I': chunk_start = True
-    if prev_tag == 'S' and tag == 'E': chunk_start = True
-    if prev_tag == 'S' and tag == 'I': chunk_start = True
-    if prev_tag == 'O' and tag == 'E': chunk_start = True
-    if prev_tag == 'O' and tag == 'I': chunk_start = True
+    if prev_tag == 'E' and tag == 'E':
+        chunk_start = True
+    if prev_tag == 'E' and tag == 'I':
+        chunk_start = True
+    if prev_tag == 'S' and tag == 'E':
+        chunk_start = True
+    if prev_tag == 'S' and tag == 'I':
+        chunk_start = True
+    if prev_tag == 'O' and tag == 'E':
+        chunk_start = True
+    if prev_tag == 'O' and tag == 'I':
+        chunk_start = True
 
     if tag != 'O' and tag != '.' and prev_type != type_:
         chunk_start = True
 
     # these chunks are assumed to have length 1
-    if tag == '[': chunk_start = True
-    if tag == ']': chunk_start = True
+    if tag == '[':
+        chunk_start = True
+    if tag == ']':
+        chunk_start = True
 
     return chunk_start
